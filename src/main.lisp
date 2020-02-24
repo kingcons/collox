@@ -8,6 +8,12 @@
    :short #\h
    :long "help"))
 
+(defun usage ()
+  (opts:describe
+   :usage-of "collox"
+   :args "FILE"
+   :suffix "In the absence of a file argument a REPL is started."))
+
 (defun unknown-option (condition)
   (format t "WARN: ~s option was not recognized.~%"
           (opts:option condition))
@@ -18,12 +24,24 @@
      (when it
        ,@body)))
 
+(defun run-file (file)
+  (collox.util:with-lines (line file)
+    (format t "~A~%" line)))
+
+(defun run-repl ()
+  (collox.util:with-prompt (:collox input)
+    (format t "~A~%" input)))
+
 (defun main ()
   (multiple-value-bind (options free-args)
       (handler-bind ((opts:unknown-option #'unknown-option))
         (opts:get-opts))
     (when-option (options :help)
-      (opts:describe :usage-of "collox" :args free-args))))
+      (usage))
+    (case (length free-args)
+      (0 (run-repl))
+      (1 (run-file (first free-args)))
+      (otherwise (usage)))))
 
 (defun deploy ()
   (sb-ext:save-lisp-and-die "bin/collox"
