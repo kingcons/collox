@@ -13,7 +13,14 @@
                  (:file "scanner" :depends-on ("util"))
                  (:file "util"))))
   :description "A Common Lisp Lox Interpreter"
+  :build-operation "program-op"
+  :build-pathname "collox"
+  :entry-point "collox:main"
   :in-order-to ((test-op (test-op "collox/tests"))))
+
+#+sb-core-compression
+(defmethod asdf:perform ((o asdf:image-op) (c asdf:system))
+  (uiop:dump-image (asdf:output-file o c) :executable t :compression t))
 
 (defsystem "collox/tests"
   :author "Brit Butler"

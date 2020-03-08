@@ -1,5 +1,6 @@
 (defpackage collox
-  (:use :cl))
+  (:use :cl)
+  (:export #:main))
 (in-package :collox)
 
 (opts:define-opts
@@ -25,7 +26,7 @@
        ,@body)))
 
 (defun run-file (file)
-  (collox.util:with-lines (line file)
+  (collox.util:with-source (line file :lines t)
     (format t "~A~%" line)))
 
 (defun run-repl ()
@@ -42,9 +43,3 @@
       (0 (run-repl))
       (1 (run-file (first free-args)))
       (otherwise (usage)))))
-
-(defun deploy ()
-  (sb-ext:save-lisp-and-die "bin/collox"
-                            :executable t
-                            :compression 9
-                            :toplevel #'main))

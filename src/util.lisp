@@ -1,12 +1,16 @@
 (defpackage collox.util
   (:use :cl :iterate)
   (:import-from :alexandria
-                #:with-input-from-file)
+                #:read-stream-content-into-string
+                #:with-input-from-file
+                #:with-unique-names)
   (:export #:define-printer
-           #:with-lines
            #:with-prompt
+           #:with-source
+           #:*source-path*
            #:source-location
            #:source-path
+           #:source-line
            #:source-start
            #:source-finish))
 (in-package :collox.util)
@@ -27,15 +31,49 @@ slot values need to be safely displayed but not read back in."
          (when *print-object-identity*
            (format stream " {~X}" (sb-kernel:get-lisp-obj-address ,type)))))))
 
-(defmacro with-lines ((line-var file &optional (stream-var 'in))
-                      &body body)
-  "WITH-LINES is a helper macro for iterating through lines in a file.
-Reading EOF will end the loop. LINE-VAR will be bound to the current line.
-FILE can be a string, pathname, or an open stream."
-  `(with-input-from-file (,stream-var ,file)
-     (iter (for ,line-var = (read-line ,stream-var nil nil))
-       (while ,line-var)
-       ,@body)))
+(defvar *source-path* nil
+  "The current file being parsed by the interpreter.")
+
+(defclass source-location ()
+  ((path
+    :initarg :path :initform *source-path*
+    :reader source-path)
+   (line
+    :initarg :line :initform (error 'no-source-line)
+    :reader source-line)
+   (start
+    :initarg :start :initform (error 'no-source-start)
+    :reader source-start)
+   (finish
+    :initarg :finish :initform (error 'no-source-finish)
+    :reader source-finish)))
+
+(define-printer source-location (line start finish)
+  "L~d:~d,~d" line start finish)
+
+(defun call-with-source-path (name function)
+  (let ((*source-path* (probe-file name)))
+    (with-input-from-file (input-stream name)
+      (funcall function input-stream))))
+
+(defmacro with-source-path ((pathname input-stream) &body body)
+  `(call-with-source-path ,pathname (lambda (,input-stream) ,@body)))
+
+(defmacro with-source ((source-var file &key (lines nil))
+                       &body body)
+  "WITH-SOURCE is a helper macro for reading a FILE of source code. During execution,
+COLLOX.UTIL:*SOURCE-PATH* is bound to the open file to ease debugging. By default,
+BODY executes in an environment where SOURCE-VAR is bound to a string of the file
+contents. If the keyword arg LINES is non-nil, each line will be individually bound
+to SOURCE-VAR and then processed by executing BODY."
+  (with-unique-names (input-stream)
+    `(with-source-path (,file ,input-stream)
+       ,(if lines
+            `(iter (for ,source-var = (read-line ,input-stream nil nil))
+               (while ,source-var)
+               ,@body)
+            `(let ((,source-var (read-stream-content-into-string ,input-stream)))
+               ,@body)))))
 
 (defmacro with-prompt ((title input &key eof-handler)
                         &body body)
@@ -50,20 +88,3 @@ by the user. EOF-HANDLER defaults to quitting to the terminal."
        (finish-output)
        (let ((,input (read-line)))
          ,@body))))
-
-(defclass source-location ()
-  ((path
-    :initarg :path :initform nil
-    :reader source-path)
-   (line
-    :initarg :line :initform (error 'no-source-line)
-    :reader source-line)
-   (start
-    :initarg :start :initform (error 'no-source-start)
-    :reader source-start)
-   (finish
-    :initarg :finish :initform (error 'no-source-finish)
-    :reader source-finish)))
-
-(define-printer source-location (line start finish)
-  "L~d:~d,~d" line start finish)
