@@ -2,6 +2,7 @@
   (:use :cl)
   (:import-from :alexandria
                 #:define-constant
+                #:if-let
                 #:when-let)
   (:import-from :collox.util
                 #:define-printer
@@ -53,16 +54,18 @@
 (define-condition syntax-error (program-error)
   ((path :initform *source-path* :reader source-path)
    (line :initarg :line :reader source-line)
-   (fragment :initarg :fragment :reader source-fragment))
+   (fragment :initarg :fragment :reader source-fragment)
+   (addendum :initform nil :initarg :addendum :reader source-addendum))
   (:documentation "Parser encountered invalid syntax.")
   (:report
    (lambda (condition stream)
      (format stream "Collox has found a syntax error...
 Path: `~S`, Line: ~D,
-Fragment: ~S~%"
+Fragment: ~S ~@[ ~%~A ~]"
              (source-path condition)
              (source-line condition)
-             (source-fragment condition)))))
+             (source-fragment condition)
+             (source-addendum condition)))))
 
 ;;;; The Collox Scanner interface
 
@@ -81,6 +84,10 @@ Fragment: ~S~%"
 (define-printer scanner (source tokens)
                 "~{~A, ~}~%" tokens)
 
+(defun is-done? (scanner)
+  (with-slots (source current) scanner
+    (>= current (length source))))
+
 (defun advance (scanner)
   (with-slots (source start current) scanner
     (incf current)
@@ -93,6 +100,19 @@ Fragment: ~S~%"
           (setf current (1+ end-of-line))
           (setf current (length source))))))
 
+(defun complete-string (scanner)
+  (with-slots (source current line) scanner
+    (if-let (end (position #\" source :start current))
+      (let ((newlines (count #\Newline source :start current :end end))
+            (contents (subseq source current end)))
+        (setf line (incf line newlines)
+              current (1+ end))
+        contents)
+      (error 'syntax-error
+             :line line
+             :fragment "\"... "
+             :addendum "String is missing closing double quote."))))
+
 (defun match (scanner test)
   (with-slots (source current) scanner
     (when (is-done? scanner)
@@ -100,10 +120,6 @@ Fragment: ~S~%"
     (when-let (found (char= (char source current) test))
       (incf current)
       found)))
-
-(defun is-done? (scanner)
-  (with-slots (source current) scanner
-    (>= current (length source))))
 
 (defun add-token (scanner type &optional value)
   (with-slots (tokens line start current) scanner
@@ -154,6 +170,8 @@ Fragment: ~S~%"
            nil)
           ((char= next-char #\Newline)
            (incf (scanner-line scanner)))
+          ((char= next-char #\")
+           (add-token scanner :string (complete-string scanner)))
           (t
            (with-slots (source line start current) scanner
              (let ((fragment (subseq source start current)))
@@ -165,7 +183,7 @@ Fragment: ~S~%"
     (labels ((iter ()
                (with-slots (start current tokens) scanner
                  (if (is-done? scanner)
-                     tokens
+                     (reverse tokens)
                      (progn
                        (setf start current)
                        (scan-token scanner)
