@@ -1,5 +1,5 @@
 (defpackage collox
-  (:use :cl)
+  (:use :cl :iterate)
   (:export #:main))
 (in-package :collox)
 
@@ -25,13 +25,18 @@
      (when it
        ,@body)))
 
+(defun display-tokens (source)
+  (let ((tokens (collox.scanner:tokenize source)))
+    (iter (for token in tokens)
+      (print token))))
+
 (defun run-file (file)
-  (collox.util:with-source (line file :lines t)
-    (format t "~A~%" line)))
+  (collox.util:with-source (source file)
+    (display-tokens source)))
 
 (defun run-repl ()
   (collox.util:with-prompt (:collox input)
-    (format t "~A~%" input)))
+    (display-tokens input)))
 
 (defun main ()
   (multiple-value-bind (options free-args)

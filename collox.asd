@@ -9,12 +9,12 @@
                "unix-opts")
   :components ((:module "src"
                 :components
-                ((:file "main" :depends-on ("util"))
+                ((:file "main" :depends-on ("scanner" "util"))
                  (:file "scanner" :depends-on ("util"))
                  (:file "util"))))
   :description "A Common Lisp Lox Interpreter"
   :build-operation "program-op"
-  :build-pathname "collox"
+  :build-pathname "bin/collox"
   :entry-point "collox:main"
   :in-order-to ((test-op (test-op "collox/tests"))))
 
