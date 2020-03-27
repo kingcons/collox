@@ -88,6 +88,10 @@ Fragment: ~S ~@[ ~%~A ~]"
   (with-slots (source current) scanner
     (>= current (length source))))
 
+(defun is-ident-char? (char)
+  (or (alphanumericp char)
+      (char= #\_ char)))
+
 (defun advance (scanner)
   (with-slots (source start current) scanner
     (incf current)
@@ -127,6 +131,33 @@ Fragment: ~S ~@[ ~%~A ~]"
         (setf current (or end (length source)))
         (read-from-string num)))))
 
+(defun complete-identifier (scanner)
+  (with-slots (source start current) scanner
+    (let ((end (position-if-not #'is-ident-char? source :start current)))
+      (setf current (or end (length source)))
+      (subseq source start current))))
+
+(defun maybe-keyword (identifier)
+  (let ((keywords '(("and" :and)
+                    ("class" :class)
+                    ("else" :else)
+                    ("false" :false)
+                    ("for" :for)
+                    ("fun" :fun)
+                    ("if" :if)
+                    ("nil" :nil)
+                    ("or" :or)
+                    ("print" :print)
+                    ("return" :return)
+                    ("super" :super)
+                    ("this" :this)
+                    ("true" :true)
+                    ("var" :var)
+                    ("while" :while))))
+    (if-let (result (assoc identifier keywords :test #'string=))
+      (second result)
+      :identifier)))
+
 (defun match (scanner test)
   (with-slots (source current) scanner
     (when (is-done? scanner)
@@ -136,6 +167,7 @@ Fragment: ~S ~@[ ~%~A ~]"
       found)))
 
 (defun add-token (scanner type &optional value)
+  (check-type type lox-token)
   (with-slots (tokens line start current) scanner
     (let* ((location (make-location line start current))
            (token (make-token location type value)))
@@ -188,6 +220,9 @@ Fragment: ~S ~@[ ~%~A ~]"
            (add-token scanner :string (complete-string scanner)))
           ((digit-char-p next-char)
            (add-token scanner :number (complete-number scanner)))
+          ((is-ident-char? next-char)
+           (let ((identifier (complete-identifier scanner)))
+             (add-token scanner (maybe-keyword identifier) identifier)))
           (t
            (with-slots (source line start current) scanner
              (let ((fragment (subseq source start current)))

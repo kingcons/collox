@@ -33,6 +33,6 @@
     (ok (= (length (tokenize "42.4")) 1))
     (ok (= 123.4 (token-value (car (tokenize "123.4")))))))
 
-;; (deftest test-tokenize-4
-;;   (testing "should parse a basic variable definition"
-;;     (ok (tokenize "var language = \"lox\""))))
+(deftest test-tokenize-4
+  (testing "should parse a basic variable definition"
+    (ok (tokenize "var language = \"lox\""))))
