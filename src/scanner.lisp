@@ -1,5 +1,5 @@
 (defpackage :collox.scanner
-  (:use :cl)
+  (:use :cl :iterate)
   (:import-from :alexandria
                 #:define-constant
                 #:if-let
@@ -113,6 +113,20 @@ Fragment: ~S ~@[ ~%~A ~]"
              :fragment "\"... "
              :addendum "String is missing closing double quote."))))
 
+(defun complete-number (scanner)
+  (with-slots (source current line) scanner
+    (flet ((end-of-number ()
+             (when-let (non-digit (position-if-not #'digit-char-p source
+                                                   :start current))
+               (if (and (char= (char source non-digit) #\.)
+                        (digit-char-p (char source (1+ non-digit))))
+                   (position-if-not #'digit-char-p source :start (1+ non-digit))
+                   non-digit))))
+      (let* ((end (end-of-number))
+             (num (subseq source (1- current) end)))
+        (setf current (or end (length source)))
+        (read-from-string num)))))
+
 (defun match (scanner test)
   (with-slots (source current) scanner
     (when (is-done? scanner)
@@ -172,6 +186,8 @@ Fragment: ~S ~@[ ~%~A ~]"
            (incf (scanner-line scanner)))
           ((char= next-char #\")
            (add-token scanner :string (complete-string scanner)))
+          ((digit-char-p next-char)
+           (add-token scanner :number (complete-number scanner)))
           (t
            (with-slots (source line start current) scanner
              (let ((fragment (subseq source start current)))
@@ -180,12 +196,8 @@ Fragment: ~S ~@[ ~%~A ~]"
 (defun tokenize (source)
   "Take a SOURCE as input and return a list of Lox tokens."
   (let ((scanner (make-instance 'scanner :source source)))
-    (labels ((iter ()
-               (with-slots (start current tokens) scanner
-                 (if (is-done? scanner)
-                     (reverse tokens)
-                     (progn
-                       (setf start current)
-                       (scan-token scanner)
-                       (iter))))))
-      (iter))))
+    (with-slots (start current tokens) scanner
+      (iter (until (is-done? scanner))
+        (setf start current)
+        (scan-token scanner))
+      (reverse tokens))))
