@@ -8,12 +8,33 @@
            #:with-prompt
            #:with-source
            #:*source-path*
+           #:make-location
            #:source-location
            #:source-path
            #:source-line
            #:source-start
            #:source-finish))
 (in-package :collox.util)
+
+(deftype -> (args values)
+  `(function ,args ,values))
+
+(defmacro -> (function args values)
+  "Declaim the ftype of FUNCTION from ARGS to VALUES.
+     (-> mod-fixnum+ (fixnum fixnum) fixnum)
+     (defun mod-fixnum+ (x y) ...)"
+  `(declaim (ftype (-> ,args ,values) ,function)))
+
+(defun type= (type1 type2)
+  (and (subtypep type1 type2)
+       (subtypep type2 type1)))
+
+(defmacro case-of (expr type &body clauses)
+  (let ((actual-type `(member ,@(mapcar #'first clauses))))
+    (unless (type= type actual-type)
+      (warn "Type mismatch: ~a vs. ~a" type actual-type))
+    `(case ,expr
+       ,@clauses)))
 
 (defparameter *print-object-identity* nil)
 
@@ -31,7 +52,7 @@ slot values need to be safely displayed but not read back in."
          (when *print-object-identity*
            (format stream " {~X}" (sb-kernel:get-lisp-obj-address ,type)))))))
 
-(defvar *source-path* nil
+(defvar *source-path* :repl
   "The current file being parsed by the interpreter.")
 
 (defclass source-location ()
@@ -47,6 +68,9 @@ slot values need to be safely displayed but not read back in."
    (finish
     :initarg :finish :initform (error 'no-source-finish)
     :reader source-finish)))
+
+(defun make-location (line start finish)
+  (make-instance 'source-location :line line :start start :finish finish))
 
 (define-printer source-location (line start finish)
   "L~d:~d,~d" line start finish)

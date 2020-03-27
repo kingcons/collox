@@ -1,11 +1,19 @@
 (defpackage collox/tests/main
   (:use :cl
         :collox
-        :rove))
+        :rove)
+  (:import-from :alexandria
+                :read-file-into-string)
+  (:import-from :collox.scanner
+                :tokenize))
 (in-package :collox/tests/main)
 
 ;; NOTE: To run this test file, execute `(asdf:test-system :collox)' in your Lisp.
 
-(deftest test-target-1
-  (testing "should (= 1 1) to be true"
-    (ok (= 1 1))))
+(deftest test-tokenize-1
+  (testing "should parse comments and basic operators"
+    (ok (tokenize (read-file-into-string "scanner1.lox")))))
+
+;; (deftest test-tokenize-2
+;;   (testing "should parse a basic variable definition"
+;;     (ok (tokenize "var language = \"lox\""))))
