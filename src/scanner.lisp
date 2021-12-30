@@ -3,12 +3,14 @@
   (:import-from :alexandria
                 #:define-constant
                 #:if-let
-                #:when-let)
+                #:when-let
+                #:when-let*)
   (:import-from :collox.util
                 #:define-printer
                 #:make-location
                 #:*source-path*)
   (:export #:tokenize))
+
 (in-package :collox.scanner)
 
 ;;;; Lox Tokens
@@ -119,15 +121,23 @@ Fragment: ~S ~@[ ~%~A ~]"
 
 (defun complete-number (scanner)
   (with-slots (source current line) scanner
-    (flet ((end-of-number ()
-             (when-let (non-digit (position-if-not #'digit-char-p source
-                                                   :start current))
-               (if (and (char= (char source non-digit) #\.)
-                        (digit-char-p (char source (1+ non-digit))))
-                   (position-if-not #'digit-char-p source :start (1+ non-digit))
-                   non-digit))))
+    (labels ((is-dot? (position)
+               (char= #\. (char source position)))
+             (end-of-number ()
+               (when-let* ((non-digit (position-if-not #'digit-char-p source
+                                                       :start current))
+                           (next-token (char source (1+ non-digit))))
+                 (if (and (is-dot? non-digit)
+                          (digit-char-p next-token))
+                     (position-if-not #'digit-char-p source :start (1+ non-digit))
+                     non-digit))))
       (let* ((end (end-of-number))
              (num (subseq source (1- current) end)))
+        (when (and end (is-dot? end))
+          (error 'syntax-error
+                 :line line
+                 :fragment (subseq source (1- current) (1+ end))
+                 :addendum "Number found with multiple decimal points"))
         (setf current (or end (length source)))
         (read-from-string num)))))
 

@@ -1,7 +1,7 @@
 (fiasco:define-test-package :collox/tests
   (:use :collox)
   (:import-from :alexandria :read-file-into-string)
-  (:import-from :collox.scanner :tokenize :token-value))
+  (:import-from :collox.scanner :tokenize :token-value :syntax-error))
 
 (in-package :collox/tests)
 
@@ -16,13 +16,13 @@
 
 (deftest tokenize-strings ()
   (finishes (tokenize "()() \"foobar\""))
-  (signals error (tokenize "()()\"unterminated")))
+  (signals syntax-error (tokenize "()()\"unterminated")))
 
 (deftest tokenize-numbers ()
   (finishes (tokenize "42"))
   (finishes (tokenize "123.589"))
-  (signals error (tokenize "42.."))
-  (signals error (tokenize "123.456.789"))
+  (signals syntax-error (tokenize "42.."))
+  (signals syntax-error (tokenize "123.456.789"))
   (finishes (= (length (tokenize "42.4")) 1))
   (finishes (= 123.4 (token-value (car (tokenize "123.4"))))))
 

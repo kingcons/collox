@@ -14,16 +14,17 @@ Don't. ... Yet.
 
 ## Testing
 
-Tests written with rove.
+Tests written with fiasco.
 
 ```
 (asdf:test-system :collox)
 ```
 
-Or if running rove from the CLI with roswell...
+Or if running tests at the REPL...
 
 ````
-rove collox.asd
+;; Make sure you have quickloaded :collox/tests
+(fiasco:run-tests '(collox/tests))
 ````
 
 ## Author
@@ -32,7 +33,7 @@ rove collox.asd
 
 ## Copyright
 
-Copyright (c) 2020 Brit Butler (brit@kingcons.io)
+Copyright (c) 2021 Brit Butler (brit@kingcons.io)
 
 ## License
 
