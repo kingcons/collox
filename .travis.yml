@@ -14,6 +14,6 @@ install:
 
 script:
   - cl -e '(push *default-pathname-defaults* ql:*local-project-directories*)
-           (ql:quickload :collox/tests)
-           (unless (fiasco:run-tests (quote (collox-tests)))
+           (ql:quickload :collox.tests)
+           (unless (fiasco:run-tests (quote (collox.tests)))
              (uiop:quit 1))'
