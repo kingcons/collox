@@ -16,13 +16,13 @@
   :build-operation "program-op"
   :build-pathname "bin/collox"
   :entry-point "collox:main"
-  :in-order-to ((test-op (test-op "collox/tests"))))
+  :in-order-to ((test-op (test-op "collox.tests"))))
 
 #+sb-core-compression
 (defmethod asdf:perform ((o asdf:image-op) (c asdf:system))
   (uiop:dump-image (asdf:output-file o c) :executable t :compression t))
 
-(defsystem "collox/tests"
+(defsystem "collox.tests"
   :author "Brit Butler"
   :license "BSD"
   :depends-on ("collox"
@@ -31,4 +31,4 @@
                 :components
                 ((:file "main"))))
   :description "Test system for collox"
-  :perform (test-op (op c) (symbol-call :rove :run c)))
+  :perform (test-op (op c) (symbol-call :fiasco :run-tests :collox.tests)))

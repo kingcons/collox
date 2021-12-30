@@ -126,7 +126,8 @@ Fragment: ~S ~@[ ~%~A ~]"
              (end-of-number ()
                (when-let* ((non-digit (position-if-not #'digit-char-p source
                                                        :start current))
-                           (next-token (char source (1+ non-digit))))
+                           (next-token (and (> (length source) (1+ non-digit))
+                                            (char source (1+ non-digit)))))
                  (if (and (is-dot? non-digit)
                           (digit-char-p next-token))
                      (position-if-not #'digit-char-p source :start (1+ non-digit))
