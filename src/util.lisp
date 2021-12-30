@@ -36,8 +36,6 @@
     `(case ,expr
        ,@clauses)))
 
-(defparameter *print-object-identity* nil)
-
 (defmacro define-printer (type (&rest vars) format-string &rest args)
   "Define printer is a helper macro for generating a PRINT-OBJECT
 method. DEFINE-PRINTER provides a shorthand for the common case where
@@ -48,9 +46,7 @@ slot values need to be safely displayed but not read back in."
                                  (unbound-slot () :unbound)))))
        (print-unreadable-object (,type stream :type t)
          (let ((*print-pretty* nil))
-           (format stream ,format-string ,@args))
-         (when *print-object-identity*
-           (format stream " {~X}" (sb-kernel:get-lisp-obj-address ,type)))))))
+           (format stream ,format-string ,@args))))))
 
 (defvar *source-path* :repl
   "The current file being parsed by the interpreter.")
@@ -106,7 +102,7 @@ TITLE will serve as the prompt. INPUT will be bound to each line entered
 by the user. EOF-HANDLER defaults to quitting to the terminal."
   `(handler-bind ((end-of-file (or ,eof-handler
                                    (lambda (&rest args)
-                                     (sb-ext:exit)))))
+                                     (uiop:quit)))))
      (iter
        (format t "~&~(~A~)> " ,title)
        (finish-output)
