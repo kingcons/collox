@@ -26,7 +26,7 @@
   :author "Brit Butler"
   :license "BSD"
   :depends-on ("collox"
-               "rove")
+               "fiasco")
   :components ((:module "tests"
                 :components
                 ((:file "main"))))

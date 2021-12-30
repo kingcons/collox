@@ -1,6 +1,7 @@
 (defpackage collox
   (:use :cl :iterate)
   (:export #:main))
+
 (in-package :collox)
 
 (opts:define-opts
