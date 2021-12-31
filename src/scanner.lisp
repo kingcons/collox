@@ -7,9 +7,9 @@
                 #:when-let*)
   (:import-from :collox.util
                 #:define-printer
-                #:make-location
-                #:*source-path*)
-  (:export #:tokenize))
+                #:make-location)
+  (:export #:tokenize
+           #:syntax-error))
 
 (in-package :collox.scanner)
 
@@ -54,20 +54,16 @@
 ;;;; Syntax Errors
 
 (define-condition syntax-error (program-error)
-  ((path :initform *source-path* :reader source-path)
-   (line :initarg :line :reader source-line)
+  ((line :initarg :line :reader source-line)
    (fragment :initarg :fragment :reader source-fragment)
    (addendum :initform nil :initarg :addendum :reader source-addendum))
   (:documentation "Parser encountered invalid syntax.")
   (:report
    (lambda (condition stream)
-     (format stream "Collox has found a syntax error...
-Path: `~S`, Line: ~D,
-Fragment: ~S ~@[ ~%~A ~]"
-             (source-path condition)
+     (format stream "Syntax Error: ~@[ ~A ~]~%  ~D | ~S~%"
+             (source-addendum condition)
              (source-line condition)
-             (source-fragment condition)
-             (source-addendum condition)))))
+             (source-fragment condition)))))
 
 ;;;; The Collox Scanner interface
 
@@ -106,8 +102,11 @@ Fragment: ~S ~@[ ~%~A ~]"
           (setf current (1+ end-of-line))
           (setf current (length source))))))
 
+(defun get-fragment (source start)
+  (subseq source start (position #\Newline source :start start)))
+
 (defun complete-string (scanner)
-  (with-slots (source current line) scanner
+  (with-slots (source current line start) scanner
     (if-let (end (position #\" source :start current))
       (let ((newlines (count #\Newline source :start current :end end))
             (contents (subseq source current end)))
@@ -116,11 +115,11 @@ Fragment: ~S ~@[ ~%~A ~]"
         contents)
       (error 'syntax-error
              :line line
-             :fragment "\"... "
+             :fragment (get-fragment source start)
              :addendum "String is missing closing double quote."))))
 
 (defun complete-number (scanner)
-  (with-slots (source current line) scanner
+  (with-slots (source current line start) scanner
     (labels ((is-dot? (position)
                (char= #\. (char source position)))
              (end-of-number ()
@@ -137,7 +136,7 @@ Fragment: ~S ~@[ ~%~A ~]"
         (when (and end (is-dot? end))
           (error 'syntax-error
                  :line line
-                 :fragment (subseq source (1- current) (1+ end))
+                 :fragment (get-fragment source start)
                  :addendum "Number found with multiple decimal points"))
         (setf current (or end (length source)))
         (read-from-string num)))))
@@ -235,9 +234,12 @@ Fragment: ~S ~@[ ~%~A ~]"
            (let ((identifier (complete-identifier scanner)))
              (add-token scanner (maybe-keyword identifier) identifier)))
           (t
-           (with-slots (source line start current) scanner
-             (let ((fragment (subseq source start current)))
-               (error 'syntax-error :line line :fragment fragment)))))))
+           (with-slots (source line start) scanner
+             (let ((fragment (get-fragment source start)))
+               (error 'syntax-error
+                      :line line
+                      :fragment fragment
+                      :addendum "Unrecognized token")))))))
 
 (defun tokenize (source)
   "Take a SOURCE as input and return a list of Lox tokens."

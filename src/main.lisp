@@ -1,5 +1,6 @@
 (defpackage collox
   (:use :cl :iterate)
+  (:import-from :alexandria #:when-let)
   (:export #:main))
 
 (in-package :collox)
@@ -21,13 +22,10 @@
           (opts:option condition))
   (invoke-restart 'opts:skip-option))
 
-(defmacro when-option ((options opt) &body body)
-  `(let ((it (getf ,options ,opt)))
-     (when it
-       ,@body)))
-
 (defun display-tokens (source)
-  (let ((tokens (collox.scanner:tokenize source)))
+  (let ((tokens (handler-case (collox.scanner:tokenize source)
+                  (collox.scanner:syntax-error (condition)
+                    (format *error-output* "~%~A~%" condition)))))
     (iter (for token in tokens)
       (print token))
     (fresh-line)))
@@ -44,7 +42,7 @@
   (multiple-value-bind (options free-args)
       (handler-bind ((opts:unknown-option #'unknown-option))
         (opts:get-opts))
-    (when-option (options :help)
+    (when-let (option (getf options :help))
       (usage)
       (uiop:quit))
     (case (length free-args)
