@@ -9,7 +9,8 @@
                "unix-opts")
   :components ((:module "src"
                 :components
-                ((:file "main" :depends-on ("scanner" "util"))
+                ((:file "main" :depends-on ("parser"))
+                 (:file "parser" :depends-on ("scanner"))
                  (:file "scanner" :depends-on ("util"))
                  (:file "util"))))
   :description "A Common Lisp Lox Interpreter"
