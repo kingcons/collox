@@ -24,6 +24,7 @@
 
 (defun display-tokens (source)
   (let ((tokens (handler-case (collox.scanner:tokenize source)
+                  ;; TODO: Continue scanning and report errors in aggregate.
                   (collox.scanner:syntax-error (condition)
                     (format *error-output* "~%~A~%" condition)))))
     (iter (for token in tokens)
