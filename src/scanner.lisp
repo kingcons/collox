@@ -8,7 +8,10 @@
   (:import-from :collox.util
                 #:define-printer
                 #:make-location)
-  (:export #:tokenize
+  (:export #:token
+           #:token-type
+           #:token-value
+           #:tokenize
            #:syntax-error))
 
 (in-package :collox.scanner)
@@ -60,7 +63,7 @@
   (:documentation "Parser encountered invalid syntax.")
   (:report
    (lambda (condition stream)
-     (format stream "Syntax Error: ~@[ ~A ~]~%  ~D | ~S~%"
+     (format stream "Syntax Error: ~@[ ~A ~]~%  Line ~D | ~S~%"
              (source-addendum condition)
              (source-line condition)
              (source-fragment condition)))))

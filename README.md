@@ -23,8 +23,8 @@ Tests written with fiasco.
 Or if running tests at the REPL...
 
 ````
-;; Make sure you have quickloaded :collox.tests
-(fiasco:run-tests '(collox.tests))
+;; Make sure you have quickloaded :collox/tests
+(fiasco:all-tests)
 ````
 
 ## Author

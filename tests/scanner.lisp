@@ -1,9 +1,8 @@
-(fiasco:define-test-package :collox.tests
-  (:use :collox :collox.tests)
-  (:import-from :alexandria :read-file-into-string)
-  (:import-from :collox.scanner :tokenize :token-value :token-type :syntax-error))
+(fiasco:define-test-package :collox.tests.scanner
+  (:use :collox :collox.scanner)
+  (:import-from :alexandria :read-file-into-string))
 
-(in-package :collox.tests)
+(in-package :collox.tests.scanner)
 
 ;; NOTE: To run this test file, execute `(asdf:test-system :collox)' in your Lisp.
 
